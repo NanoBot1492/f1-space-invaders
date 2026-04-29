@@ -1,0 +1,299 @@
+import React, { useRef, useEffect } from 'react';
+import './GameCanvas.css';
+
+const GameCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    
+    // Set canvas size
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Game objects
+    const player = {
+      x: canvas.width / 2 - 25,
+      y: canvas.height - 80,
+      width: 50,
+      height: 30,
+      speed: 5,
+      color: '#0600EF' // Red Bull blue
+    };
+    
+    const enemies = [];
+    const bullets = [];
+    const enemyBullets = [];
+    
+    // Initialize enemies in grid formation
+    const initEnemies = () => {
+      const rows = 5;
+      const cols = 8;
+      const spacingX = 60;
+      const spacingY = 40;
+      const startX = (canvas.width - (cols - 1) * spacingX) / 2;
+      const startY = 100;
+      
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          enemies.push({
+            x: startX + col * spacingX,
+            y: startY + row * spacingY,
+            width: 40,
+            height: 30,
+            speed: 1,
+            color: '#FFFF00', // Red Bull yellow
+            direction: 1 // 1 for right, -1 for left
+          });
+        }
+      }
+    };
+    
+    initEnemies();
+    
+    // Input handling
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.key] = false;
+    });
+    
+    // Touch controls for mobile
+    let touchStartX = 0;
+    canvas.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      e.preventDefault();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchmove', (e) => {
+      const touchX = e.touches[0].clientX;
+      const diff = touchX - touchStartX;
+      if (Math.abs(diff) > 10) {
+        if (diff > 0) {
+          keys['ArrowRight'] = true;
+          keys['ArrowLeft'] = false;
+        } else {
+          keys['ArrowLeft'] = true;
+          keys['ArrowRight'] = false;
+        }
+        touchStartX = touchX;
+      }
+      e.preventDefault();
+    }, { passive: false });
+    
+    canvas.addEventListener('touchend', () => {
+      keys['ArrowLeft'] = false;
+      keys['ArrowRight'] = false;
+    });
+    
+    // Shooting
+    const shoot = () => {
+      if (Date.now() - player.lastShot > 300) { // 300ms cooldown
+        bullets.push({
+          x: player.x + player.width / 2 - 2,
+          y: player.y,
+          width: 4,
+          height: 10,
+          speed: 7,
+          color: '#FF0000' // Red Red Bull accent
+        });
+        player.lastShot = Date.now();
+      }
+    };
+    
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        shoot();
+      }
+    });
+    
+    // Game loop
+    let lastTime = 0;
+    const gameLoop = (timestamp) => {
+      const deltaTime = timestamp - lastTime;
+      lastTime = timestamp;
+      
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Update player position
+      if (keys['ArrowLeft'] && player.x > 0) {
+        player.x -= player.speed;
+      }
+      if (keys['ArrowRight'] && player.x < canvas.width - player.width) {
+        player.x += player.speed;
+      }
+      
+      // Update bullets
+      bullets.forEach((bullet, index) => {
+        bullet.y -= bullet.speed;
+        if (bullet.y < 0) {
+          bullets.splice(index, 1);
+        }
+      });
+      
+      // Update enemy bullets
+      enemyBullets.forEach((bullet, index) => {
+        bullet.y += bullet.speed;
+        if (bullet.y > canvas.height) {
+          enemyBullets.splice(index, 1);
+        }
+      });
+      
+      // Update enemies
+      let moveDown = false;
+      enemies.forEach(enemy => {
+        enemy.x += enemy.speed * enemy.direction;
+        
+        // Check bounds
+        if (enemy.x <= 0 || enemy.x >= canvas.width - enemy.width) {
+          moveDown = true;
+        }
+      });
+      
+      if (moveDown) {
+        enemies.forEach(enemy => {
+          enemy.direction *= -1;
+          enemy.y += 20;
+        });
+      }
+      
+      // Enemy shooting
+      if (Date.now() - (window.lastEnemyShot || 0) > 1500) {
+        if (enemies.length > 0) {
+          const shooter = enemies[Math.floor(Math.random() * enemies.length)];
+          enemyBullets.push({
+            x: shooter.x + shooter.width / 2 - 2,
+            y: shooter.y + shooter.height,
+            width: 4,
+            height: 10,
+            speed: 3,
+            color: '#00FF00' // Green for enemy bullets
+          });
+          window.lastEnemyShot = Date.now();
+        }
+      }
+      
+      // Collision detection
+      // Bullets hitting enemies
+      bullets.forEach((bullet, bIndex) => {
+        enemies.forEach((enemy, eIndex) => {
+          if (
+            bullet.x < enemy.x + enemy.width &&
+            bullet.x + bullet.width > enemy.x &&
+            bullet.y < enemy.y + enemy.height &&
+            bullet.y + bullet.height > enemy.y
+          ) {
+            enemies.splice(eIndex, 1);
+            bullets.splice(bIndex, 1);
+          }
+        });
+      });
+      
+      // Enemy bullets hitting player
+      enemyBullets.forEach((bullet, index) => {
+        if (
+          bullet.x < player.x + player.width &&
+          bullet.x + bullet.width > player.x &&
+          bullet.y < player.y + player.height &&
+          bullet.y + bullet.height > player.y
+        ) {
+          // Player hit - reduce lives or game over
+          enemyBullets.splice(index, 1);
+          // For now, just remove the bullet
+        }
+      });
+      
+      // Draw player
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+      
+      // Draw player details (F1 car-like)
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(player.x + 5, player.y - 10, 10, 10); // Cockpit
+      ctx.fillRect(player.x + 15, player.y - 5, 20, 5); // Wing
+      
+      // Draw bullets
+      ctx.fillStyle = bullets[0]?.color || '#FF0000';
+      bullets.forEach(bullet => {
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+      });
+      
+      // Draw enemy bullets
+      ctx.fillStyle = enemyBullets[0]?.color || '#00FF00';
+      enemyBullets.forEach(bullet => {
+        ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
+      });
+      
+      // Draw enemies
+      enemies.forEach(enemy => {
+        ctx.fillStyle = enemy.color;
+        ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        
+        // Add F1 tire details
+        ctx.fillStyle = '#000000';
+        ctx.beginPath();
+        ctx.arc(enemy.x + 10, enemy.y + enemy.height, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(enemy.x + enemy.width - 10, enemy.y + enemy.height, 8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      
+      // Draw UI
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = '20px Arial';
+      ctx.fillText(`Enemies: ${enemies.length}`, 20, 30);
+      
+      // Check win/lose conditions
+      if (enemies.length === 0) {
+        ctx.fillStyle = '#FFFF00';
+        ctx.font = '40px Arial';
+        ctx.fillText('YOU WIN!', canvas.width / 2 - 100, canvas.height / 2);
+        return;
+      }
+      
+      // Check if enemies reached player
+      const enemiesReachedBottom = enemies.some(enemy => 
+        enemy.y + enemy.height > player.y
+      );
+      
+      if (enemiesReachedBottom) {
+        ctx.fillStyle = '#FF0000';
+        ctx.font = '40px Arial';
+        ctx.fillText('GAME OVER', canvas.width / 2 - 120, canvas.height / 2);
+        return;
+      }
+      
+      requestAnimationFrame(gameLoop);
+    };
+    
+    requestAnimationFrame(gameLoop);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('keydown', null);
+      window.removeEventListener('keyup', null);
+      canvas.removeEventListener('touchstart', null);
+      canvas.removeEventListener('touchmove', null);
+      canvas.removeEventListener('touchend', null);
+    };
+  }, []);
+  
+  return (
+    <div>
+      <canvas ref={canvasRef} />
+    </div>
+  );
+};
+
+export default GameCanvas;
