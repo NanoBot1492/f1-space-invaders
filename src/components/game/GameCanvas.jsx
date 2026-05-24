@@ -478,17 +478,18 @@ const GameCanvas = () => {
       const trackWidth = Math.min(540, canvas.width * 0.85);
       const leftBoundary = (canvas.width - trackWidth) / 2;
 
-      // Calculate grid sizing dynamically to prevent out-of-bounds spawning (Mobile / Lvl 4 bug fix)
       const rows = 3 + Math.min(s.level, 3); 
       const cols = 5 + Math.min(s.level, 4); 
       
-      // Calculate dynamic spacingX so total width stays within 80% of current track width
-      const maxGridWidth = trackWidth * 0.8;
-      const spacingX = Math.min(60, maxGridWidth / (cols - 1));
+      // Calculate dynamic spacingX so total grid width (including car width) is at least 25px away from borders
+      const enemyWidth = 38;
+      const maxGridSpacingWidth = trackWidth - 50 - enemyWidth; // 25px buffer left, 25px buffer right, minus car width
+      const spacingX = Math.min(60, maxGridSpacingWidth / (cols - 1));
       const spacingY = 48;
 
       const gridWidth = (cols - 1) * spacingX;
-      const startX = leftBoundary + (trackWidth - gridWidth) / 2;
+      // Start centered within the track width
+      const startX = leftBoundary + (trackWidth - (gridWidth + enemyWidth)) / 2;
       const startY = 110;
 
       for (let r = 0; r < rows; r++) {
@@ -499,7 +500,7 @@ const GameCanvas = () => {
           enemies.push({
             x: startX + c * spacingX,
             y: startY + r * spacingY,
-            width: 38,
+            width: enemyWidth,
             height: 52,
             speed: 1.0 + s.level * 0.25,
             direction: 1,
@@ -881,10 +882,10 @@ const GameCanvas = () => {
           enemy.x += enemy.speed * enemy.direction;
           
           // Directional border check: only bounce when moving *towards* the hit edge
-          if (enemy.direction === 1 && enemy.x >= rightBoundary - enemy.width - 10) {
+          if (enemy.direction === 1 && enemy.x >= rightBoundary - enemy.width - 15) {
             bounce = true;
           }
-          if (enemy.direction === -1 && enemy.x <= leftBoundary + 10) {
+          if (enemy.direction === -1 && enemy.x <= leftBoundary + 15) {
             bounce = true;
           }
         }
@@ -1333,6 +1334,7 @@ const GameCanvas = () => {
               className="mobile-btn steer"
               onTouchStart={(e) => { e.preventDefault(); stateRef.current.steerLeft = true; }}
               onTouchEnd={(e) => { e.preventDefault(); stateRef.current.steerLeft = false; }}
+              onTouchCancel={(e) => { e.preventDefault(); stateRef.current.steerLeft = false; }}
             >
               ←
             </div>
@@ -1340,6 +1342,7 @@ const GameCanvas = () => {
               className="mobile-btn steer"
               onTouchStart={(e) => { e.preventDefault(); stateRef.current.steerRight = true; }}
               onTouchEnd={(e) => { e.preventDefault(); stateRef.current.steerRight = false; }}
+              onTouchCancel={(e) => { e.preventDefault(); stateRef.current.steerRight = false; }}
             >
               →
             </div>
@@ -1362,6 +1365,7 @@ const GameCanvas = () => {
               className="mobile-btn fire"
               onTouchStart={(e) => { e.preventDefault(); stateRef.current.isFiring = true; handleActionClick(); }}
               onTouchEnd={(e) => { e.preventDefault(); stateRef.current.isFiring = false; }}
+              onTouchCancel={(e) => { e.preventDefault(); stateRef.current.isFiring = false; }}
             >
               FIRE
             </div>
