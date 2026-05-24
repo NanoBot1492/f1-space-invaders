@@ -1,13 +1,13 @@
 {
   "files": {
-    "main.css": "/static/css/main.7fafaa8b.css",
-    "main.js": "/static/js/main.0e575d50.js",
-    "index.html": "/index.html",
-    "main.7fafaa8b.css.map": "/static/css/main.7fafaa8b.css.map",
-    "main.0e575d50.js.map": "/static/js/main.0e575d50.js.map"
+    "main.css": "/f1-space-invaders/static/css/main.0dc0a2db.css",
+    "main.js": "/f1-space-invaders/static/js/main.89a19430.js",
+    "index.html": "/f1-space-invaders/index.html",
+    "main.0dc0a2db.css.map": "/f1-space-invaders/static/css/main.0dc0a2db.css.map",
+    "main.89a19430.js.map": "/f1-space-invaders/static/js/main.89a19430.js.map"
   },
   "entrypoints": [
-    "static/css/main.7fafaa8b.css",
-    "static/js/main.0e575d50.js"
+    "static/css/main.0dc0a2db.css",
+    "static/js/main.89a19430.js"
   ]
 }

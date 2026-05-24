@@ -1,6 +1,553 @@
-.GameCanvas {
+.GameCanvas-container {
   position: relative;
-  width: 100%;
+  width: 100vw;
   height: 100vh;
   overflow: hidden;
+  background-color: var(--track-gray);
+}
+
+.GameCanvas-canvas {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* Glassmorphism Overlays */
+.GameCanvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(8, 8, 12, 0.4);
+  z-index: 20;
+}
+
+.GameCanvas-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 550px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), 0 0 40px var(--glass-glow);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: cardFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.GameCanvas-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 32px;
+  margin: 0 0 10px 0;
+  color: var(--rb-yellow);
+  letter-spacing: 2px;
+  text-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+  text-transform: uppercase;
+}
+
+.GameCanvas-subtitle {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  color: var(--neon-blue);
+  letter-spacing: 3px;
+  margin: 0 0 30px 0;
+  text-transform: uppercase;
+}
+
+.GameCanvas-desc {
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(245, 245, 247, 0.8);
+  margin-bottom: 25px;
+}
+
+/* Strategic Tire Option Selectors */
+.tire-selectors {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.tire-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 15px 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tire-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+.tire-card.selected {
+  background: rgba(0, 243, 255, 0.1);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.25);
+}
+
+.tire-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 4px solid currentColor;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.tire-badge.soft {
+  color: var(--rb-red);
+}
+
+.tire-badge.medium {
+  color: var(--rb-yellow);
+}
+
+.tire-badge.hard {
+  color: #ffffff;
+}
+
+.tire-name {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.tire-spec {
+  font-size: 10px;
+  color: rgba(245, 245, 247, 0.5);
+  line-height: 1.3;
+}
+
+/* Racing Control Buttons */
+.btn-race {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--rb-white);
+  background: linear-gradient(135deg, var(--rb-blue), #0300a8);
+  border: 1px solid rgba(0, 243, 255, 0.3);
+  padding: 14px 40px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(6, 0, 239, 0.4);
+  text-transform: uppercase;
+  outline: none;
+}
+
+.btn-race:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 243, 255, 0.4);
+  border-color: var(--neon-blue);
+  background: linear-gradient(135deg, #0900ff, var(--rb-blue));
+}
+
+.btn-race:active {
+  transform: translateY(0);
+}
+
+/* Control Instructions list */
+.controls-guide {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: 25px;
+  padding-top: 20px;
+}
+
+.control-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 10px;
+  color: rgba(245, 245, 247, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.key-cap {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 700;
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  padding: 3px 8px;
+  margin-bottom: 8px;
+  color: #fff;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* Virtual Race Engineer Terminal Overlay */
+.engineer-bubble {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  width: 280px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  z-index: 15;
+  animation: bubbleSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+@keyframes bubbleSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.engineer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--rb-blue), var(--neon-blue));
+  border: 2px solid var(--neon-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 12px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+}
+
+.engineer-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.engineer-name {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--rb-yellow);
+  letter-spacing: 1px;
+  margin-bottom: 3px;
+  text-transform: uppercase;
+}
+
+.engineer-text {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(245, 245, 247, 0.9);
+}
+
+/* Pit Lane reflex game overlays */
+.pit-game-prompt {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: 20px;
+  color: #fff;
+  letter-spacing: 2px;
+  margin-bottom: 15px;
+}
+
+.pit-hit-zone-container {
+  position: relative;
+  width: 100%;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  margin: 15px 0 25px 0;
+  overflow: hidden;
+}
+
+.pit-target-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(0, 243, 255, 0.3);
+  border-left: 2px solid var(--neon-blue);
+  border-right: 2px solid var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.3) inset;
+}
+
+.pit-ticker {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: var(--rb-red);
+  box-shadow: 0 0 8px var(--rb-red);
+  border-radius: 4px;
+}
+
+/* Audio Start Prompt Overlay */
+.audio-init-prompt {
+  cursor: pointer;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
+  background: rgba(10, 10, 15, 0.9);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  flex-direction: column;
+}
+
+.audio-init-prompt h2 {
+  font-family: 'Orbitron', sans-serif;
+  color: var(--rb-yellow);
+  font-size: 24px;
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.audio-init-prompt p {
+  color: rgba(245, 245, 247, 0.7);
+  font-size: 13px;
+  max-width: 400px;
+  line-height: 1.5;
+  margin-bottom: 25px;
+}
+
+/* CRT overlay effect */
+.crt::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 99;
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+}
+
+.screen-flicker {
+  animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+  0% { opacity: 0.99; }
+  50% { opacity: 0.975; }
+  100% { opacity: 0.99; }
+}
+
+/* Score Leaderboard Table */
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+}
+
+.leaderboard-table th {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  color: var(--neon-blue);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  text-align: left;
+}
+
+.leaderboard-table td {
+  padding: 8px;
+  font-size: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  text-align: left;
+}
+
+.leaderboard-table tr:first-child td {
+  color: var(--rb-yellow);
+  font-weight: bold;
+}
+
+/* Mobile touch controls overlay */
+.mobile-controls {
+  position: absolute;
+  bottom: 100px; /* just above the bottom HUD */
+  left: 0;
+  width: 100%;
+  padding: 0 20px;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none; /* let click-through work for canvas except on buttons */
+  z-index: 30;
+}
+
+.mobile-steer-cluster {
+  display: flex;
+  gap: 15px;
+  pointer-events: auto;
+}
+
+.mobile-action-cluster {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-end;
+  pointer-events: auto;
+}
+
+.mobile-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(10, 10, 20, 0.7);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-weight: bold;
+  font-size: 18px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+  transition: all 0.1s ease;
+}
+
+.mobile-btn:active {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 15px rgba(0, 243, 255, 0.4);
+  transform: scale(0.92);
+}
+
+.mobile-btn.steer {
+  border-color: rgba(255, 255, 255, 0.25);
+  font-size: 24px;
+}
+
+.mobile-btn.fire {
+  width: 70px;
+  height: 70px;
+  border-color: var(--rb-red);
+  background: rgba(255, 0, 85, 0.15);
+  font-size: 13px;
+}
+
+.mobile-btn.fire:active {
+  background: rgba(255, 0, 85, 0.4);
+  border-color: #ff3377;
+  box-shadow: 0 0 15px rgba(255, 0, 85, 0.5);
+}
+
+.mobile-btn.drs {
+  width: 48px;
+  height: 48px;
+  font-size: 10px;
+  border-color: var(--rb-yellow);
+  background: rgba(255, 204, 0, 0.1);
+  opacity: 0.5;
+}
+
+.mobile-btn.drs.ready {
+  opacity: 1;
+  border-color: var(--rb-yellow);
+  animation: glowPulse 1s infinite alternate;
+}
+
+@keyframes glowPulse {
+  from {
+    box-shadow: 0 0 5px var(--rb-yellow);
+    border-color: var(--rb-yellow);
+  }
+  to {
+    box-shadow: 0 0 15px var(--rb-yellow);
+    border-color: #fff;
+  }
+}
+
+.mobile-btn.box {
+  width: 48px;
+  height: 48px;
+  font-size: 10px;
+  border-color: var(--neon-blue);
+  background: rgba(0, 243, 255, 0.1);
+  opacity: 0.5;
+}
+
+.mobile-btn.box.ready {
+  opacity: 1;
+  border-color: var(--rb-red);
+  animation: boxPulse 0.8s infinite alternate;
+}
+
+@keyframes boxPulse {
+  from {
+    box-shadow: 0 0 5px var(--rb-red);
+    border-color: var(--rb-red);
+  }
+  to {
+    box-shadow: 0 0 15px var(--rb-red);
+    border-color: #fff;
+  }
+}
+
+/* Hide on large desktop screen unless touch-friendly */
+@media (min-width: 1024px) {
+  .mobile-controls {
+    display: none;
+  }
 }
