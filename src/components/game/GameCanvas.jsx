@@ -9,27 +9,28 @@ const GameCanvas = () => {
     const ctx = canvas.getContext('2d');
 
     // Set canvas size
-    const resizeCanvas = () => {
+const resizeCanvas = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      player.x = canvas.width / 2 - player.width / 2;
     };
 
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Game state machine
     const GAME_STATES = {
       MENU: 'menu',
       PLAYING: 'playing',
-      PAUSED: 'paused',
       GAME_OVER: 'game_over',
       LEVEL_COMPLETE: 'level_complete'
     };
+
     let gameState = GAME_STATES.MENU;
     let level = 1;
     let score = 0;
     let multiplier = 1;
     let lastHitTime = 0;
+    let highScores = JSON.parse(localStorage.getItem('f1_scores') || '[]');
 
     // Game objects
     const player = {
@@ -42,14 +43,15 @@ const GameCanvas = () => {
       lastShot: 0
     };
 
-    const enemies = [];
-    const bullets = [];
-    const enemyBullets = [];
-    const particles = [];
-    const powerUps = [];
+    let enemies = [];
+    let bullets = [];
+    let enemyBullets = [];
+    let particles = [];
+    let powerUps = [];
 
     // Initialize enemies in grid formation
     const initEnemies = () => {
+      enemies = [];
       const rows = 4 + level;
       const cols = 6 + Math.min(level, 4);
       const spacingX = 60;
@@ -76,26 +78,42 @@ const GameCanvas = () => {
 
     // Input handling
     const keys = {};
-    window.addEventListener('keydown', (e) => {
+    const handleKeyDown = (e) => {
       keys[e.key] = true;
-    });
-    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space') {
+        if (gameState !== GAME_STATES.PLAYING) {
+          gameState = GAME_STATES.PLAYING;
+          level = 1;
+          score = 0;
+          multiplier = 1;
+          player.x = canvas.width / 2 - 25;
+          player.y = canvas.height - 80;
+          initEnemies();
+          console.log('MENU → PLAYING | enemies:', enemies.length);
+        } else {
+          shoot();
+        }
+      }
+    };
+    const handleKeyUp = (e) => {
       keys[e.key] = false;
-    });
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
 
     // Touch controls for mobile
     let touchStartX = 0;
     let touchStartY = 0;
     let isDragging = false;
 
-    canvas.addEventListener('touchstart', (e) => {
+    const handleTouchStart = (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
       isDragging = false;
       e.preventDefault();
-    }, { passive: false });
+    };
 
-    canvas.addEventListener('touchmove', (e) => {
+    const handleTouchMove = (e) => {
       const touchX = e.touches[0].clientX;
       const touchY = e.touches[0].clientY;
       const diffX = touchX - touchStartX;
@@ -115,17 +133,35 @@ const GameCanvas = () => {
         touchStartY = touchY;
       }
       e.preventDefault();
-    }, { passive: false });
+    };
 
-    canvas.addEventListener('touchend', (e) => {
-      // If not dragging, treat as tap to shoot
-      if (!isDragging) {
-        shoot();
-      }
+    const handleTouchEnd = (e) => {
+      if (!isDragging) handleTap();
       keys['ArrowLeft'] = false;
       keys['ArrowRight'] = false;
       isDragging = false;
-    });
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+
+    const handleTap = () => {
+      if (gameState !== GAME_STATES.PLAYING) {
+        gameState = GAME_STATES.PLAYING;
+        level = 1;
+        score = 0;
+        multiplier = 1;
+        player.x = canvas.width / 2 - 25;
+        player.y = canvas.height - 80;
+        initEnemies();
+        console.log('MENU → PLAYING | enemies:', enemies.length);
+      } else {
+        shoot();
+      }
+    };
+
+    canvas.addEventListener('click', handleTap);
 
     // Audio (lightweight)
     const playSound = (type) => {
@@ -155,30 +191,48 @@ const GameCanvas = () => {
       }
     };
 
-    window.addEventListener('keydown', (e) => {
-      if (e.code === 'Space') {
-        shoot();
-      }
-    });
+    
 
     // Game loop
     let lastTime = 0;
+    let frameCount = 0;
     const gameLoop = (timestamp) => {
       const deltaTime = timestamp - lastTime;
       lastTime = timestamp;
+      frameCount++;
 
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // space gradient background
+      const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      grad.addColorStop(0, '#020024');
+      grad.addColorStop(1, '#090979');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // State screens
+      // stars
+      ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 50; i++) {
+        const x = (i * 97) % canvas.width;
+        const y = (i * 53 + frameCount * 0.5) % canvas.height;
+        ctx.fillRect(x, y, 1, 1);
+      }
+
       if (gameState !== GAME_STATES.PLAYING) {
-        ctx.fillStyle = '#00000090';
+        ctx.fillStyle = '#000000aa';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#FFFFFF';
+        ctx.fillStyle = '#fff';
         ctx.font = '40px Arial';
         ctx.textAlign = 'center';
-        const text = gameState === GAME_STATES.MENU ? 'TAP TO START' : gameState === GAME_STATES.GAME_OVER ? 'GAME OVER' : 'LEVEL COMPLETE';
+        let text = '';
+        if (gameState === GAME_STATES.MENU) {
+          text = 'TAP/SPACE TO START';
+          ctx.font = 'bold 48px Arial';
+        } else if (gameState === GAME_STATES.GAME_OVER) {
+          text = 'GAME OVER Score: ' + score + ' TAP TO RESTART';
+        } else {
+          text = 'LEVEL COMPLETE! Score: ' + score + ' TAP FOR NEXT';
+        }
         ctx.fillText(text, canvas.width / 2, canvas.height / 2);
+        requestAnimationFrame(gameLoop);
         return;
       }
 
@@ -191,19 +245,15 @@ const GameCanvas = () => {
       }
 
       // Update bullets
-      bullets.forEach((bullet, index) => {
-        bullet.y -= bullet.speed;
-        if (bullet.y < 0) {
-          bullets.splice(index, 1);
-        }
+      bullets = bullets.filter(b => {
+        b.y -= b.speed;
+        return b.y > 0;
       });
 
       // Update enemy bullets
-      enemyBullets.forEach((bullet, index) => {
-        bullet.y += bullet.speed;
-        if (bullet.y > canvas.height) {
-          enemyBullets.splice(index, 1);
-        }
+      enemyBullets = enemyBullets.filter(b => {
+        b.y += b.speed;
+        return b.y < canvas.height;
       });
 
       // Update enemies
@@ -242,16 +292,16 @@ const GameCanvas = () => {
 
       // Collision detection
       // Bullets hitting enemies
-      bullets.forEach((bullet, bIndex) => {
-        enemies.forEach((enemy, eIndex) => {
+      bullets.forEach((bullet) => {
+        enemies.forEach((enemy) => {
           if (
             bullet.x < enemy.x + enemy.width &&
             bullet.x + bullet.width > enemy.x &&
             bullet.y < enemy.y + enemy.height &&
             bullet.y + bullet.height > enemy.y
           ) {
-            enemies.splice(eIndex, 1);
-            bullets.splice(bIndex, 1);
+            enemy.dead = true;
+            bullet.dead = true;
 
             // particles
             for (let i = 0; i < 10; i++) {
@@ -275,19 +325,29 @@ const GameCanvas = () => {
         });
       });
 
+      enemies = enemies.filter(e => !e.dead);
+      bullets = bullets.filter(b => !b.dead);
+
       // Enemy bullets hitting player
-      enemyBullets.forEach((bullet, index) => {
-        if (
-          bullet.x < player.x + player.width &&
-          bullet.x + bullet.width > player.x &&
-          bullet.y < player.y + player.height &&
-          bullet.y + bullet.height > player.y
-        ) {
-          // Player hit - game over
-          enemyBullets.splice(index, 1);
-          gameState = GAME_STATES.GAME_OVER;
-        }
-      });
+      const playerHitByBullet = enemyBullets.some(bullet =>
+        bullet.x < player.x + player.width &&
+        bullet.x + bullet.width > player.x &&
+        bullet.y < player.y + player.height &&
+        bullet.y + bullet.height > player.y
+      );
+      enemyBullets = enemyBullets.filter(bullet => !(
+        bullet.x < player.x + player.width &&
+        bullet.x + bullet.width > player.x &&
+        bullet.y < player.y + player.height &&
+        bullet.y + bullet.height > player.y
+      ));
+
+      if (playerHitByBullet) {
+        gameState = GAME_STATES.GAME_OVER;
+        highScores.push(score);
+        highScores = highScores.sort((a,b)=>b-a).slice(0,10);
+        localStorage.setItem('f1_scores', JSON.stringify(highScores));
+      }
 
       // Draw player
       ctx.fillStyle = player.color;
@@ -333,17 +393,55 @@ const GameCanvas = () => {
       ctx.fillStyle = '#0600EF';
       powerUps.forEach(p => ctx.fillRect(p.x, p.y, 15, 15));
 
+      // Update particles
+      particles = particles.filter(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        return p.life > 0;
+      });
+
+      // Update powerups
+      powerUps = powerUps.filter(p => {
+        p.y += 2;
+        return p.y < canvas.height;
+      });
+
+      const collectedPowerUp = powerUps.some(p =>
+        p.x < player.x + player.width &&
+        p.x + 15 > player.x &&
+        p.y < player.y + player.height &&
+        p.y + 15 > player.y
+      );
+      powerUps = powerUps.filter(p => !(
+        p.x < player.x + player.width &&
+        p.x + 15 > player.x &&
+        p.y < player.y + player.height &&
+        p.y + 15 > player.y
+      ));
+
+      if (collectedPowerUp) {
+        player.speed += 1;
+      }
+
       // Draw UI
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '20px Arial';
       ctx.textAlign = 'left';
       ctx.fillText(`Score: ${score} x${multiplier}`, 20, 30);
 
+      // debug every 60 frames
+      if (frameCount % 60 === 0) {
+        window.gameDebug = { state: gameState, enemies: enemies.length, score };
+        console.log('DEBUG', window.gameDebug);
+      }
+
       // Check win/lose conditions
       if (enemies.length === 0) {
         level++;
         initEnemies();
         gameState = GAME_STATES.LEVEL_COMPLETE;
+        requestAnimationFrame(gameLoop);
         return;
       }
 
@@ -354,6 +452,7 @@ const GameCanvas = () => {
 
       if (enemiesReachedBottom) {
         gameState = GAME_STATES.GAME_OVER;
+        requestAnimationFrame(gameLoop);
         return;
       }
 
@@ -365,11 +464,12 @@ const GameCanvas = () => {
     // Cleanup
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('keydown', null);
-      window.removeEventListener('keyup', null);
-      canvas.removeEventListener('touchstart', null);
-      canvas.removeEventListener('touchmove', null);
-      canvas.removeEventListener('touchend', null);
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      canvas.removeEventListener('click', handleTap);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
     };
   }, []);
 
@@ -381,54 +481,3 @@ const GameCanvas = () => {
 };
 
 export default GameCanvas;
-    };
-
-    // Inside gameLoop, after collision detection and before drawing UI:
-    // Update power-ups
-export default GameCanvas;
-    // Inside gameLoop, after collision detection and before drawing UI:
-    // Update power-ups
-    powerUps.forEach((p, i) => {
-      p.y += 2;
-      if (p.y > canvas.height) powerUps.splice(i, 1);
-    });
-
-    // Update particles
-    particles.forEach((p, i) => {
-      p.x += p.vx;
-      p.y += p.vy;
-      p.life--;
-      if (p.life <= 0) particles.splice(i, 1);
-    });
-
-    // Power-up collection
-    powerUps.forEach((p, i) => {
-      if (
-        p.x < player.x + player.width &&
-        p.x + 20 > player.x &&
-        p.y < player.y + player.height &&
-        p.y + 20 > player.y
-      ) {
-        powerUps.splice(i, 1);
-        player.speed += 1;
-        playSound('power');
-      }
-    });
-  };
-  requestAnimationFrame(gameLoop);
-};
-
-  // Cleanup
-  return () => {
-    window.removeEventListener('resize', resizeCanvas);
-    window.removeEventListener('keydown', null);
-    window.removeEventListener('keyup', null);
-    canvas.removeEventListener('touchstart', null);
-    canvas.removeEventListener('touchmove', null);
-    canvas.removeEventListener('touchend', null);
-  };
-}, []);;
-  };
-
-    requestAnimationFrame(gameLoop);
-  };
