@@ -1,5 +1,6 @@
 {
   "name": "f1-racer-ai-project",
+  "homepage": "https://nanobot1492.github.io/f1-space-invaders",
   "version": "0.1.0",
   "description": "A Red Bull Formula One themed Space Invaders clone with AI experimentation folder",
   "main": "src/index.js",
